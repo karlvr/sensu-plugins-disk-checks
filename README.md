@@ -13,8 +13,9 @@ Table of Contents
 
 ## Overview
 
-Replacements for [sensu-plugins/sensu-plugins-disk-checks](https://github.com/sensu-plugins/sensu-plugins-disk-checks)
-using Perl rather than Ruby.
+Replacements for [sensu-plugins/sensu-plugins-disk-checks](https://github.com/sensu-plugins/sensu-plugins-disk-checks) using Perl rather than Ruby, so that it doesn't require the Ruby runtime.
+
+This plugin is architecture independent; it will run on Intel and ARM machines.
 
 This is a work in progress, and only the check(s) that I need are ported. I would welcome ports to Perl that follow a similar approach.
 
