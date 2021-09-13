@@ -16,10 +16,12 @@ use List::Util qw(any);
 
 my $scheme = hostname() . '.diskstats';
 my @ignoredevices = ('^loop', 'p[0-9]+$');
+my @includedevices;
 
 GetOptions(
 	'scheme|s=s' => \$scheme,
-	'ignore-device|i=s' => \@ignoredevices,
+	'ignore-device|x=s' => \@ignoredevices,
+	'include-device|i=s' => \@includedevices,
 ) or pod2usage(2);
 
 my $now = time();
@@ -35,6 +37,7 @@ while (my $line = <$fh>) {
 	my ($major, $minor, $device, $reads, $reads_merged, $reads_sectors, $read_time, $writes, $writes_merged, $writes_sectors, $write_time) = split(/\s+/, $line);
 
 	next if @ignoredevices && any { $device =~ $_ } @ignoredevices;
+	next if @includedevices && !any { $device =~ $_ } @includedevices;
 		
 	output("$device.reads", $reads);
 	output("$device.read_time", $read_time);
