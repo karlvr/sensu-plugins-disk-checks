@@ -133,11 +133,11 @@ if (@crit_fs) {
 	print "\n";
 	exit 2;
 } elsif (@warn_fs) {
-	print join("\n", (@crit_fs, @warn_fs));
+	print join("\n", @warn_fs);
 	print "\n";
 	exit 1;
 } else {
-	print join("\n", (@crit_fs, @warn_fs));
+	print join("\n", @info_fs);
 	print "\n";
 	exit 0;
 }
