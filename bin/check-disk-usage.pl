@@ -6,6 +6,7 @@ use Getopt::Long qw(:config no_auto_abbrev no_ignore_case);
 use Pod::Usage;
 use Sys::Hostname;
 use List::Util qw(any);
+use POSIX qw/floor/;
 
 my @fstype; # Only check fs type(s)
 my @ignoretype; # Ignore fs type(s)
@@ -70,11 +71,12 @@ sub adj_percent {
 	my $hsize = $size / $normal;
 	my $felt = $hsize ** $magic;
 	my $scale = $felt / $hsize;
-	return 100 - ((100 - $percent) * $scale);
+	return floor(100 - ((100 - $percent) * $scale));
 }
 
 my @crit_fs = ();
 my @warn_fs = ();
+my @info_fs = ();
 
 while (my $line = <$fh>) {
 	my ($mnt, $type, $used, $percent_b, $size, $percent_i) = split(/\s+/, $line);
@@ -115,24 +117,27 @@ while (my $line = <$fh>) {
 		$actual_bwarn = adj_percent($size_i, $bwarn);
 	}
 
-	if ($percent_b >= $bcrit) {
-		push(@crit_fs, "$mnt $percent_b% bytes usage ($used/$size)");
-	} elsif ($percent_b >= $bwarn) {
-		push(@warn_fs, "$mnt $percent_b% bytes usage ($used/$size)");
+	if ($percent_b >= $actual_bcrit) {
+		push(@crit_fs, "$mnt $percent_b% bytes usage >= $actual_bcrit% ($used/$size)");
+	} elsif ($percent_b >= $actual_bwarn) {
+		push(@warn_fs, "$mnt $percent_b% bytes usage >= $actual_bwarn% ($used/$size)");
+	} else {
+		push(@info_fs, "$mnt $percent_b% bytes usage < $actual_bwarn% ($used/$size)");
 	}
 }
 
 close($fh);
 
 if (@crit_fs) {
-	print join(', ', (@crit_fs, @warn_fs));
+	print join("\n", (@crit_fs, @warn_fs));
 	print "\n";
 	exit 2;
 } elsif (@warn_fs) {
-	print join(', ', (@crit_fs, @warn_fs));
+	print join("\n", (@crit_fs, @warn_fs));
 	print "\n";
 	exit 1;
 } else {
-	print "All disk usage under $bwarn% and inode usage under $iwarn%\n";
+	print join("\n", (@crit_fs, @warn_fs));
+	print "\n";
 	exit 0;
 }
