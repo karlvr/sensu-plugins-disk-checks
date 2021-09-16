@@ -19,9 +19,9 @@ my $bwarn = 85; # Warn if PERCENT or more of disk full
 my $bcrit = 95; # Critical if PERCENT or more of disk full
 my $iwarn = 85; # Warn if PERCENT or more of inodes used
 my $icrit = 95; # Critical if PERCENT or more of inodes used
-my $magic = 1.0; # Magic factor to adjust warn/crit thresholds. Example: .9
-my $normal = 20; # Levels are not adapted for filesystems of exactly this size, where levels are reduced for smaller filesystems and raised for larger filesystems.
-my $minimum = 100; # Minimum size to adjust (in GB)
+my $magic = 1.0; # Magic factor to adjust warn/crit thresholds [0.0 - 1.0]. Raises the warning and critical levels for disks of size greater than `normal`, and lowers for smaller.
+my $normal = 20; # Size of filesystem (in GB) that is not adapted by the `magic` factor.
+my $minimum = 100; # Minimum size of filesystem to adjust using `normal` and `magic (in GB)
 
 GetOptions(
 	'type|t=s' => \@fstype,
