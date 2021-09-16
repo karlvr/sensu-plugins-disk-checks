@@ -24,21 +24,21 @@ my $normal = 20; # Levels are not adapted for filesystems of exactly this size, 
 my $minimum = 100; # Minimum size to adjust (in GB)
 
 GetOptions(
-	't=s' => \@fstype,
-	'x=s' => \@ignoretype,
-	'i=s' => \@ignoremnt,
-	'I=s' => \@includemnt,
-	'p=s' => \$ignorepathre,
-	'o=s' => \@ignoreopt,
+	'type|t=s' => \@fstype,
+	'ignore-type|x=s' => \@ignoretype,
+	'ignore-mnt|i=s' => \@ignoremnt,
+	'include-mnt|I=s' => \@includemnt,
+	'ignore-path-re|p=s' => \$ignorepathre,
+	'ignore-opt|o=s' => \@ignoreopt,
 	'ignore-readonly' => \$ignorereadonly,
 	'ignore-reserved|r' => \$ignore_reserved,
 	'w=i' => \$bwarn,
 	'c=i' => \$bcrit,
 	'W=i' => \$iwarn,
 	'K=i' => \$icrit,
-	'm=f' => \$magic,
-	'n=f' => \$normal,
-	'l=f' => \$minimum,
+	'magic|m=f' => \$magic,
+	'normal|n=f' => \$normal,
+	'minimum|l=f' => \$minimum,
 ) or pod2usage(2);
 
 @fstype = split(/,/, join(',', @fstype));
