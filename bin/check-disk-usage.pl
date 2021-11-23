@@ -51,7 +51,7 @@ GetOptions(
 my @mounts = split(/\n/, `mount`);
 
 my $now = time();
-open(my $fh, "df -BG --output=target,fstype,used,pcent,size,ipcent|") or die("Cannot run df");
+open(my $fh, "df -BG --output=target,fstype,used,pcent,size,iused,ipcent,itotal|") or die("Cannot run df");
 
 <$fh>; # Discard first line
 
@@ -79,7 +79,7 @@ my @warn_fs = ();
 my @info_fs = ();
 
 while (my $line = <$fh>) {
-	my ($mnt, $type, $used, $percent_b, $size, $percent_i) = split(/\s+/, $line);
+	my ($mnt, $type, $used, $used_p, $size, $i_used, $i_used_p, $i_size) = split(/\s+/, $line);
 
 	my @options = mount_options($mnt, $type);
 
@@ -93,19 +93,21 @@ while (my $line = <$fh>) {
 
 	next if $type eq 'devfs';
 
-	$percent_i =~ s/[^0-9]//g;
+	$i_used_p =~ s/[^0-9]//g;
 
-	if (length $percent_i > 0) {
-		if ($percent_i >= $icrit) {
-			push(@crit_fs, "$mnt $percent_i% inode usage");
-		} elsif ($percent_i >= $iwarn) {
-			push(@warn_fs, "$mnt $percent_i% inode usage");
+	if (length $i_used_p > 0) {
+		if ($i_used_p >= $icrit) {
+			push(@crit_fs, "$mnt $i_used_p% inode usage >= $icrit ($i_used/$i_size)");
+		} elsif ($i_used_p >= $iwarn) {
+			push(@warn_fs, "$mnt $i_used_p% inode usage >= $iwarn ($i_used/$i_size)");
+		} else {
+			push(@info_fs, "$mnt $i_used_p% inode usage < $iwarn% ($i_used/$i_size)")
 		}
 	}
 
 	my $size_i = $size;
 	$size_i =~ s/[^0-9]//g;
-	$percent_b =~ s/[^0-9]//g;
+	$used_p =~ s/[^0-9]//g;
 
 	my $actual_bcrit;
 	my $actual_bwarn;
@@ -117,12 +119,12 @@ while (my $line = <$fh>) {
 		$actual_bwarn = adj_percent($size_i, $bwarn);
 	}
 
-	if ($percent_b >= $actual_bcrit) {
-		push(@crit_fs, "$mnt $percent_b% bytes usage >= $actual_bcrit% ($used/$size)");
-	} elsif ($percent_b >= $actual_bwarn) {
-		push(@warn_fs, "$mnt $percent_b% bytes usage >= $actual_bwarn% ($used/$size)");
+	if ($used_p >= $actual_bcrit) {
+		push(@crit_fs, "$mnt $used_p% bytes usage >= $actual_bcrit% ($used/$size)");
+	} elsif ($used_p >= $actual_bwarn) {
+		push(@warn_fs, "$mnt $used_p% bytes usage >= $actual_bwarn% ($used/$size)");
 	} else {
-		push(@info_fs, "$mnt $percent_b% bytes usage < $actual_bwarn% ($used/$size)");
+		push(@info_fs, "$mnt $used_p% bytes usage < $actual_bwarn% ($used/$size)");
 	}
 }
 
