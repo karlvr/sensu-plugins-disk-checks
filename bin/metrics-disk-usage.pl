@@ -8,63 +8,99 @@ use Sys::Hostname;
 use List::Util qw(any);
 
 my $scheme = hostname() . '.disk_usage';
-my @ignore_mnt;
-my @include_mnt;
+my @fstype; # Only check fs type(s)
+my @ignoretype; # Ignore fs type(s)
+my @ignoremnt; # Ignore mount point(s)
+my @includemnt; # Include only mount point(s)
+my $ignorepathre; # Ignore mount point(s) matching regular expression
+my @ignoreopt; # Ignore option(s)
+my $ignorereadonly; # Ignore read-only filesystems
 my $flatten;
 my $local;
 my $block_size = 'M';
 
 GetOptions(
 	'scheme|s=s' => \$scheme,
-	'ignore-mount|i=s' => \@ignore_mnt,
-	'include-mount|I=s' => \@include_mnt,
+	'type|t=s' => \@fstype,
+	'ignore-type|x=s' => \@ignoretype,
+	'ignore-mount|ignore-mnt|i=s' => \@ignoremnt,
+	'include-mount|include-mnt|I=s' => \@includemnt,
+	'ignore-path-re|p=s' => \$ignorepathre,
+	'ignore-opt|o=s' => \@ignoreopt,
+	'ignore-readonly' => \$ignorereadonly,
 	'flatten|f' => \$flatten,
 	'local|l' => \$local,
 	'block-size|B=s' => \$block_size,
 ) or pod2usage(2);
 
-@ignore_mnt = split(/,/, join(',', @ignore_mnt));
-@include_mnt = split(/,/, join(',', @include_mnt));
+@fstype = split(/,/, join(',', @fstype));
+@ignoretype = split(/,/, join(',', @ignoretype));
+@ignoremnt = split(/,/, join(',', @ignoremnt));
+@includemnt = split(/,/, join(',', @includemnt));
+@ignoreopt = split(/,/, join(',', @ignoreopt));
 
 my @cli_options = ();
-push(@cli_options, "-PB$block_size");
+push(@cli_options, "-B$block_size");
 push(@cli_options, "-l") if $local;
 
 my $delim = $flatten ? '_' : '.';
 
+my @mounts = split(/\n/, `mount`);
+
 my $now = time();
-open(my $fh, "df @cli_options|") or die("Cannot run df");
+open(my $fh, "df @cli_options --output=target,fstype,used,avail,pcent,iused,iavail,ipcent|") or die("Cannot run df");
 
 <$fh>; # Discard first line
 
+sub mount_options {
+	my ($mnt, $type) = @_;
+	foreach my $mount_line (@mounts) {
+		if ($mount_line =~ /$mnt type $type \((.*)\)/) {
+			return split(/,/, $1);
+		}
+	}
+	return undef;
+}
+
 while (my $line = <$fh>) {
-	my ($filesystem, $blocks, $used, $avail, $used_p, $mnt) = split(/\s+/, $line);
+	my ($mnt, $type, $used, $avail, $used_p, $i_used, $i_avail, $i_used_p) = split(/\s+/, $line);
 
-	if ($mnt !~ /\/sys(\/|$)|\/dev(\/|$)|\/run(\/|$)/) {
-		next if @ignore_mnt && any { $mnt =~ $_ } @ignore_mnt;
-		next if @include_mnt && !any { $mnt =~ $_ } @include_mnt;
+	my @options = mount_options($mnt, $type);
 
-		if ($flatten) {
-			if ($mnt eq '/') {
-				$mnt = 'root';
-			} else {
-				$mnt =~ s/^\///;
-			}
-		} elsif ($mnt eq '/') {
+	next if @fstype && !any { $_ eq $type } @fstype;
+	next if @ignoretype && any { $_ eq $type } @ignoretype;
+	next if @ignoremnt && any { $mnt =~ $_ } @ignoremnt;
+	next if $ignorepathre && $mnt =~ $ignorepathre;
+	next if @ignoreopt && any { my $option = $_; return any { $_ eq $option } @options } @ignoreopt;
+	next if $ignorereadonly && any { $_ eq 'ro' } @options;
+	next if @includemnt && !any { $mnt =~ $_ } @includemnt;
+
+	if ($flatten) {
+		if ($mnt eq '/') {
 			$mnt = 'root';
 		} else {
-			$mnt =~ s/^\//root./;
+			$mnt =~ s/^\///;
 		}
-
-		$mnt =~ s/\//$delim/g;
-		$used =~ s/[^0-9]//g;
-		$avail =~ s/[^0-9]//g;
-		$used_p =~ s/[^0-9]//g;
-
-		print "$scheme.$mnt.used $used $now\n";
-		print "$scheme.$mnt.avail $avail $now\n";
-		print "$scheme.$mnt.used_percentage $used_p $now\n";
+	} elsif ($mnt eq '/') {
+		$mnt = 'root';
+	} else {
+		$mnt =~ s/^\//root./;
 	}
+
+	$mnt =~ s/\//$delim/g;
+	$used =~ s/[^0-9]//g;
+	$avail =~ s/[^0-9]//g;
+	$used_p =~ s/[^0-9]//g;
+	$i_used =~ s/[^0-9]//g;
+	$i_avail =~ s/[^0-9]//g;
+	$i_used_p =~ s/[^0-9]//g;
+
+	print "$scheme.$mnt.used $used $now\n";
+	print "$scheme.$mnt.avail $avail $now\n";
+	print "$scheme.$mnt.used_percentage $used_p $now\n";
+	print "$scheme.$mnt.i_used $i_used $now\n";
+	print "$scheme.$mnt.i_avail $i_avail $now\n";
+	print "$scheme.$mnt.i_used_percentage $i_used_p $now\n";
 }
 
 close($fh);
