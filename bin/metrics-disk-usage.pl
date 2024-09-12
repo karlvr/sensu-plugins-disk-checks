@@ -97,10 +97,10 @@ while (my $line = <$fh>) {
 
 	print "$scheme.$mnt.used $used $now\n";
 	print "$scheme.$mnt.avail $avail $now\n";
-	print "$scheme.$mnt.used_percentage $used_p $now\n";
+	print "$scheme.$mnt.used_percentage $used_p $now\n" if length($used_p) > 0;
 	print "$scheme.$mnt.i_used $i_used $now\n";
 	print "$scheme.$mnt.i_avail $i_avail $now\n";
-	print "$scheme.$mnt.i_used_percentage $i_used_p $now\n";
+	print "$scheme.$mnt.i_used_percentage $i_used_p $now\n" if length($i_used_p) > 0;
 }
 
 close($fh);
