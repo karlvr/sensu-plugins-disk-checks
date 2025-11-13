@@ -96,6 +96,7 @@ while (my $line = <$fh>) {
 	$i_used_p =~ s/[^0-9]//g;
 
 	# Calculate higher precision percentages (as df outputs to integer precision)
+	# We use `used + avail` as our total as it takes into account reserved bytes, whereas the size value from df does not
 	if ($used + $avail > 0) {
 		$used_p = $used / ($used + $avail) * 100;
 	}
