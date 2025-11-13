@@ -95,6 +95,10 @@ while (my $line = <$fh>) {
 	$i_avail =~ s/[^0-9]//g;
 	$i_used_p =~ s/[^0-9]//g;
 
+	# Calculate higher precision percentages (as df outputs to integer precision)
+	$used_p = $used / $avail * 100;
+	$i_used_p = $i_used / $i_avail * 100;
+
 	print "$scheme.$mnt.used $used $now\n";
 	print "$scheme.$mnt.avail $avail $now\n";
 	print "$scheme.$mnt.used_percentage $used_p $now\n" if length($used_p) > 0;
